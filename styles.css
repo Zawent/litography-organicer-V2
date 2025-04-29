@@ -1,0 +1,146 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 50px;
+}
+
+button {
+    font-size: 18px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    table-layout: fixed;
+}
+
+th,
+td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+
+th:nth-child(1), td:nth-child(1) { /* NOMBRE */
+    width: 22%;
+}
+
+th:nth-child(2), td:nth-child(2) { /* APELLIDO */
+    width: 22%;
+}
+
+th:nth-child(3), td:nth-child(3) { /* ORDEN DE FOTO */
+    width: 10%; 
+}
+
+th:nth-child(4), td:nth-child(4) { /* RH */
+    width: 10%; /* También más pequeño */
+}
+
+th:nth-child(5), td:nth-child(5) { /* DOCUMENTO */
+    width: 18%;
+}
+
+th:nth-child(6), td:nth-child(6) { /* CÓDIGO */
+    width: 18%;
+}
+
+
+.checkboxes {
+    margin-bottom: 10px;
+}
+
+input[type="text"] {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+input[type="number"] {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+
+
+/* Estilos para modal */
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 2px solid #888;
+    width: 80%;
+    border-radius: 20px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+
+
+
+.excel-preview {
+    border-collapse: collapse;
+    width: 100%;
+}
+.excel-preview td, .excel-preview th {
+    border: 1px solid #999;
+    padding: 4px;
+    text-align: left;
+}

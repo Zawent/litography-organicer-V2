@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Renombrar Archivos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <h1>Litography Organicer</h1>
+
+    <div class="organizador">
+        <label><input type="checkbox" id="checkboxApellidoPrimero" onchange="toggleCheckboxes()" checked> Apellidos
+            primero</label>
+        <label><input type="checkbox" id="checkboxNombrePrimero" onchange="toggleCheckboxes()"> Nombres primero</label>
+        <br>
+        <button onclick="ordenarNombre()">Ordenar por Nombres o Apellidos</button>
+        <button onclick="limpiarTabla()">Limpiar Tabla</button>
+    </div>
+
+    <div class="checkboxes">
+        <label><input type="checkbox" id="toggleRH" onchange="toggleColumn('RH')"> RH</label>
+        <label><input type="checkbox" id="toggleDOCUMENTO" onchange="toggleColumn('DOCUMENTO')"> DOCUMENTO</label>
+        <label><input type="checkbox" id="toggleCODIGO" onchange="toggleColumn('CODIGO')"> CÓDIGO</label>
+    </div>
+
+    <!-- Tabla de datos -->
+    <table id="tabla">
+        <thead>
+            <tr>
+                <th>NOMBRE</th>
+                <th>APELLIDO</th>
+                <th>ORDEN DE FOTO</th>
+                <th class="col-RH" style="display:none;">RH</th>
+                <th class="col-DOCUMENTO" style="display:none;">DOCUMENTO</th>
+                <th class="col-CODIGO" style="display:none;">CÓDIGO</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Fila de inputs vacíos -->
+            <tr>
+                <td><input type="text"></td>
+                <td><input type="text"></td>
+                <td><input type="text"></td>
+                <td class="col-RH" style="display:none;"><input type="text"></td>
+                <td class="col-DOCUMENTO" style="display:none;"><input type="text"></td>
+                <td class="col-CODIGO" style="display:none;"><input type="text"></td>
+            </tr>
+            <!-- Puedes duplicar más filas si necesitas más inputs -->
+        </tbody>
+    </table>
+
+    <br>
+    <button onclick="seleccionarCarpeta()">Seleccionar carpeta</button>
+
+    <button onclick="abrirModalExportacion()">Exportar a Excel</button>
+
+    <!-- Modal para exportación -->
+    <div id="modalExportacion" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalExportacion()">&times;</span>
+
+            <h2>Vista previa para exportar</h2>
+
+            <div>
+                <h2>Editar NOMBRE</h2>
+                <label><input type="checkbox" id="separarNombres"> Separar nombres</label><br>
+                <label><input type="checkbox" id="nombreMayuscula" onchange="controlarFormatoNombre('mayus')"> Nombres
+                    en
+                    MAYÚSCULA</label><br>
+                <label><input type="checkbox" id="nombreOracion" onchange="controlarFormatoNombre('oracion')"> Nombres
+                    Tipo
+                    Oración</label><br>
+            </div>
+
+            <div>
+                <h2>Editar APELLIDO</h2>
+                <label><input type="checkbox" id="separarApellidos"> Separar apellidos</label><br>
+                <label><input type="checkbox" id="apellidoMayuscula" onchange="controlarFormatoApellido('mayus')">
+                    Apellidos en
+                    MAYÚSCULA</label><br>
+                <label><input type="checkbox" id="apellidoOracion" onchange="controlarFormatoApellido('oracion')">
+                    Apellidos Tipo
+                    Oración</label><br>
+            </div>
+
+
+
+            <div id="tablaExportacion"></div>
+
+            <button onclick="generarExcel()">Generar Excel</button>
+        </div>
+    </div>
+
+
+    <!-- Modal de notificación -->
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+
+
+    <!-- Funcionalidad para columnas de RH, DOCUMENTO y CODIGO -->
+    <script>
+        function toggleColumn(colName) {
+            const isChecked = document.getElementById(`toggle${colName}`).checked;
+            const cells = document.querySelectorAll(`.col-${colName}`);
+
+            cells.forEach(cell => {
+                // Mostrar u ocultar la columna
+                cell.style.display = isChecked ? '' : 'none';
+
+                // Si se desmarca el checkbox, limpiamos el contenido de los inputs de esa columna
+                if (!isChecked) {
+                    const input = cell.querySelector('input');
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            input.checked = false;
+                        } else {
+                            input.value = '';
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+    <!-- Este codigo de abajo es para el evento de pegado de la tabla -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabla = document.getElementById('tabla');
+
+            // Evento delegado: se aplica a cualquier input dentro de la tabla
+            tabla.addEventListener('paste', function (event) {
+                const input = event.target;
+                if (input.tagName !== 'INPUT') return;
+
+                event.preventDefault();
+
+                const text = event.clipboardData.getData('text/plain');
+                const lineas = text.split(/\r?\n/).filter(linea => linea.trim() !== '');
+
+                // Obtener la celda (td) del input
+                const td = input.closest('td');
+                const tr = input.closest('tr');
+                const filaIndex = Array.from(tabla.rows).indexOf(tr); // incluye thead, por eso inicia desde 1
+                const celdaIndex = Array.from(tr.cells).indexOf(td);
+
+                lineas.forEach((linea, i) => {
+                    let filaObjetivo = tabla.rows[filaIndex + i]; // ya no sumamos 1 aquí
+
+                    // Si no hay suficiente fila, crearla
+                    if (!filaObjetivo) {
+                        const nuevaFila = tabla.insertRow();
+                        const columnas = tabla.rows[0].cells.length;
+
+                        for (let j = 0; j < columnas; j++) {
+                            const nuevaCelda = nuevaFila.insertCell();
+                            const clase = tabla.rows[0].cells[j].className;
+                            if (clase.includes('col-') && tabla.rows[0].cells[j].style.display === 'none') {
+                                nuevaCelda.style.display = 'none';
+                                nuevaCelda.className = clase;
+                            } else {
+                                nuevaCelda.className = clase;
+                            }
+
+                            // Crear el input con los estilos aplicados
+                            const nuevoInput = document.createElement('input');
+                            nuevoInput.type = 'text';  // Asegurarse de que el tipo sea 'text'
+                            nuevoInput.classList.add('input-style'); // Agregar una clase para aplicar los estilos de CSS
+                            nuevaCelda.appendChild(nuevoInput);
+                        }
+                        filaObjetivo = nuevaFila;
+                    }
+
+                    const celdaObjetivo = filaObjetivo.cells[celdaIndex];
+                    if (celdaObjetivo) {
+                        const inputObjetivo = celdaObjetivo.querySelector('input');
+                        if (inputObjetivo) {
+                            inputObjetivo.value = linea;
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+
+    <!-- Funcionalidad para evento de TAB -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            tabla.addEventListener('keydown', function (event) {
+                if (event.key === 'Tab') {
+                    const input = event.target;
+
+                    if (input.tagName !== 'INPUT') return;
+
+                    event.preventDefault();
+
+                    const td = input.closest('td');
+                    const tr = input.closest('tr');
+                    const filaIndex = Array.from(tabla.rows).indexOf(tr);
+                    const celdaIndex = Array.from(tr.cells).indexOf(td);
+
+                    let siguienteFilaIndex = filaIndex + 1;
+                    if (siguienteFilaIndex >= tabla.rows.length) {
+                        // Si llegamos al final de las filas, ir a la siguiente columna
+                        siguienteFilaIndex = 1; // Esto se asume, si tienes más filas, incrementa este índice
+                    }
+
+                    const siguienteFila = tabla.rows[siguienteFilaIndex];
+                    const siguienteCelda = siguienteFila.cells[celdaIndex];
+                    const siguienteInput = siguienteCelda.querySelector('input');
+
+                    if (siguienteInput) {
+                        siguienteInput.focus();
+                    }
+                }
+            });
+        })
+    </script>
+
+    <!-- Funcionalidad para Modal de Errores -->
+    <script>
+        // Función para mostrar el modal de notificación
+        function showModal(message) {
+            const modal = document.getElementById("errorModal");
+            const errorMessage = document.getElementById("errorMessage");
+            errorMessage.innerText = message;
+            modal.style.display = "block";
+        }
+
+        // Función para cerrar el modal de notificación
+        function closeModal() {
+            const modal = document.getElementById("errorModal");
+            modal.style.display = "none";
+        }
+    </script>
+
+    <!-- Funcion de ordenar nombre y logica de Checkboxes -->
+    <script>
+        function toggleCheckboxes() {
+            const apellidoPrimero = document.getElementById("checkboxApellidoPrimero");
+            const nombrePrimero = document.getElementById("checkboxNombrePrimero");
+
+            if (apellidoPrimero.checked) {
+                nombrePrimero.checked = false;
+            } else if (nombrePrimero.checked) {
+                apellidoPrimero.checked = false;
+            }
+        }
+
+        function ordenarNombre() {
+            const tabla = document.getElementById('tabla');
+            const filas = Array.from(tabla.tBodies[0].rows);
+
+            const apellidoPrimero = document.getElementById("checkboxApellidoPrimero").checked;
+            const nombrePrimero = document.getElementById("checkboxNombrePrimero").checked;
+
+            const filasConNumero = [];
+            const filasSinNumero = [];
+
+            filas.forEach(fila => {
+                const ordenInput = fila.cells[2].querySelector('input');
+                const valor = ordenInput.value.trim();
+                const numero = parseInt(valor, 10);
+
+                if (!isNaN(numero)) {
+                    filasConNumero.push({ fila, numero });
+                } else {
+                    filasSinNumero.push(fila);
+                }
+            });
+
+            // Ordenar las filas con número
+            filasConNumero.sort((a, b) => a.numero - b.numero);
+
+            // Aplicar separación de nombre/apellido en TODAS las filas
+            let algunaFilaOrdenada = false;
+            [...filasConNumero.map(f => f.fila), ...filasSinNumero].forEach(fila => {
+                const nombreInput = fila.cells[0].querySelector('input');
+                const apellidoInput = fila.cells[1].querySelector('input');
+                const nombreCompleto = nombreInput.value.trim();
+
+                if (apellidoInput.value.trim() !== "") return;
+
+                if (nombreCompleto) {
+                    const palabras = nombreCompleto.split(/\s+/);
+
+                    if (apellidoPrimero && palabras.length > 2) {
+                        const apellidos = palabras.slice(0, 2).join(' ');
+                        const nombreRestante = palabras.slice(2).join(' ');
+                        apellidoInput.value = apellidos;
+                        nombreInput.value = nombreRestante;
+                        algunaFilaOrdenada = true;
+                    } else if (nombrePrimero && palabras.length > 2) {
+                        const apellidos = palabras.slice(-2).join(' ');
+                        const nombreRestante = palabras.slice(0, -2).join(' ');
+                        apellidoInput.value = apellidos;
+                        nombreInput.value = nombreRestante;
+                        algunaFilaOrdenada = true;
+                    }
+                }
+            });
+
+            // Reagregar filas al DOM (ordenadas primero las con número, luego las sin número)
+            const tbody = tabla.tBodies[0];
+            [...filasConNumero.map(f => f.fila), ...filasSinNumero].forEach(fila => tbody.appendChild(fila));
+
+            if (!algunaFilaOrdenada) {
+                showModal("No se pudo ordenar alguna fila. Asegúrate de que haya más de 2 palabras en el nombre y que la columna 'Apellido' esté vacía.");
+            }
+        }
+    </script>
+
+    <!-- Funcion para evitar cosas diferente a numeros en ORDEN DE FOTO -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('#tabla tbody tr').forEach(fila => {
+                const ordenInput = fila.cells[2].querySelector('input');
+                ordenInput.setAttribute('type', 'number');
+                ordenInput.setAttribute('min', '0');
+            });
+        });
+    </script>
+
+    <!-- Funcion para limpiar tabla -->
+    <script>
+        function limpiarTabla() {
+            const filas = document.querySelectorAll('#tabla tbody tr');
+
+            filas.forEach(fila => {
+                const inputs = fila.querySelectorAll('input');
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+            });
+        }
+    </script>
+
+    <!-- Modal para EXPORTAR A EXCEL -->
+    <script>
+        // Abrir modal y generar tabla de inmediato
+        function abrirModalExportacion() {
+            document.getElementById('modalExportacion').style.display = 'block';
+            actualizarVistaPrevia();  // se genera vista al abrir
+        }
+
+        // Cerrar modal
+        function cerrarModalExportacion() {
+            document.getElementById('modalExportacion').style.display = 'none';
+        }
+
+        // Control exclusivo entre "MAYUSCULA" y "Tipo Oración"
+        function controlarFormatoNombre(formato) {
+            const mayus = document.getElementById('nombreMayuscula');
+            const oracion = document.getElementById('nombreOracion');
+
+            if (formato === 'mayus') oracion.checked = false;
+            else if (formato === 'oracion') mayus.checked = false;
+
+            actualizarVistaPrevia();
+        }
+
+        function controlarFormatoApellido(formato) {
+            const mayus = document.getElementById('apellidoMayuscula');
+            const oracion = document.getElementById('apellidoOracion');
+
+            if (formato === 'mayus') oracion.checked = false;
+            else if (formato === 'oracion') mayus.checked = false;
+
+            actualizarVistaPrevia();
+        }
+
+        document.getElementById('separarApellidos').addEventListener('change', actualizarVistaPrevia);
+        document.getElementById('apellidoMayuscula').addEventListener('change', () => controlarFormatoApellido('mayus'));
+        document.getElementById('apellidoOracion').addEventListener('change', () => controlarFormatoApellido('oracion'));
+
+
+
+        // Eventos para actualizar vista previa en tiempo real
+        document.getElementById('separarNombres').addEventListener('change', actualizarVistaPrevia);
+        document.getElementById('nombreMayuscula').addEventListener('change', () => controlarFormatoNombre('mayus'));
+        document.getElementById('nombreOracion').addEventListener('change', () => controlarFormatoNombre('oracion'));
+
+        function actualizarVistaPrevia() {
+            const tablaHTML = generarTablaExportacion();
+            const contenedor = document.getElementById('tablaExportacion');
+            contenedor.innerHTML = '';
+            contenedor.appendChild(tablaHTML);
+        }
+
+        function generarTablaExportacion() {
+            const tablaOriginal = document.getElementById('tabla');
+            const tablaExport = document.createElement('table');
+            tablaExport.classList.add('excel-preview');
+
+            const thead = tablaExport.createTHead();
+            const tbody = tablaExport.createTBody();
+
+            const separarNombres = document.getElementById('separarNombres').checked;
+            const mayus = document.getElementById('nombreMayuscula').checked;
+            const oracion = document.getElementById('nombreOracion').checked;
+
+            const filasOriginales = tablaOriginal.tBodies[0].rows;
+            if (filasOriginales.length === 0) return tablaExport;
+
+            const cabecera = thead.insertRow();
+            const campos = [];
+            const totalColumnas = tablaOriginal.tHead.rows[0].cells.length;
+
+            // Detectar qué columnas tienen contenido
+            const columnasVisibles = Array.from({ length: totalColumnas }, (_, i) => {
+                return Array.from(filasOriginales).some(row => {
+                    const input = row.cells[i].querySelector('input');
+                    return input && input.value.trim() !== '';
+                });
+            });
+
+            for (let i = 0; i < totalColumnas; i++) {
+                const label = tablaOriginal.tHead.rows[0].cells[i].textContent.trim().toUpperCase();
+
+                // Ignorar columnas vacías
+                if (!columnasVisibles[i]) continue;
+
+                // Si es NOMBRE, aplicar lógica condicional
+                if (label === 'NOMBRE') {
+                    const nombreEjemplo = filasOriginales[0].cells[i].querySelector('input')?.value.trim() || '';
+                    const partes = nombreEjemplo.split(/\s+/);
+
+                    if (separarNombres) {
+                        partes.forEach((_, idx) => {
+                            cabecera.insertCell().textContent = `NOMBRE${idx + 1}`;
+                        });
+                        campos.push({ tipo: 'nombre_separado', index: i, partes: partes.length });
+                    } else {
+                        cabecera.insertCell().textContent = 'NOMBRE';
+                        campos.push({ tipo: 'nombre_unico', index: i });
+                    }
+
+                } else if (label === 'APELLIDO') {
+                    const apellidoEjemplo = filasOriginales[0].cells[i].querySelector('input')?.value.trim() || '';
+                    const partes = apellidoEjemplo.split(/\s+/);
+
+                    if (document.getElementById('separarApellidos').checked) {
+                        partes.forEach((_, idx) => {
+                            cabecera.insertCell().textContent = `APELLIDO${idx + 1}`;
+                        });
+                        campos.push({ tipo: 'apellido_separado', index: i, partes: partes.length });
+                    } else {
+                        cabecera.insertCell().textContent = 'APELLIDO';
+                        campos.push({ tipo: 'apellido_unico', index: i });
+                    }
+
+                } else {
+                    cabecera.insertCell().textContent = label;
+                    campos.push({ tipo: 'normal', index: i });
+                }
+            }
+
+            // Generar filas
+            Array.from(filasOriginales).forEach(row => {
+                const nuevaFila = tbody.insertRow();
+
+                campos.forEach(campo => {
+                    const valor = row.cells[campo.index].querySelector('input')?.value.trim() || '';
+
+                    if (campo.tipo === 'nombre_unico' || campo.tipo === 'apellido_unico') {
+                        let texto = valor;
+                        if ((campo.tipo === 'nombre_unico' && mayus) || (campo.tipo === 'apellido_unico' && document.getElementById('apellidoMayuscula').checked)) {
+                            texto = texto.toUpperCase();
+                        } else if ((campo.tipo === 'nombre_unico' && oracion) || (campo.tipo === 'apellido_unico' && document.getElementById('apellidoOracion').checked)) {
+                            texto = texto.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                        }
+                        nuevaFila.insertCell().textContent = texto;
+
+                    } else if (campo.tipo === 'nombre_separado' || campo.tipo === 'apellido_separado') {
+                        let texto = valor;
+                        const usarMayus = campo.tipo === 'nombre_separado' ? mayus : document.getElementById('apellidoMayuscula').checked;
+                        const usarOracion = campo.tipo === 'nombre_separado' ? oracion : document.getElementById('apellidoOracion').checked;
+
+                        if (usarMayus) texto = texto.toUpperCase();
+                        else if (usarOracion) texto = texto.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+                        const partes = texto.split(/\s+/);
+                        for (let i = 0; i < campo.partes; i++) {
+                            nuevaFila.insertCell().textContent = partes[i] || '';
+                        }
+
+                    } else if (campo.tipo === 'normal') {
+                        nuevaFila.insertCell().textContent = valor;
+                    }
+                });
+            });
+
+            return tablaExport;
+        }
+    </script>
+
+    <!-- EXportar a excel -->
+    <script>
+        function generarExcel() {
+            const tabla = document.querySelector("#tablaExportacion table");
+            const datos = [];
+
+            if (!tabla) {
+                alert("No se encontró ninguna tabla para exportar.");
+                return;
+            }
+
+            const headers = Array.from(tabla.rows[0].cells).map(cell => cell.innerText.trim());
+
+            for (let i = 1; i < tabla.rows.length; i++) {
+                const row = tabla.rows[i];
+                const fila = {};
+                for (let j = 0; j < row.cells.length; j++) {
+                    fila[headers[j]] = row.cells[j].innerText.trim();
+                }
+                datos.push(fila);
+            }
+
+            window.pywebview.api.exportar_excel(datos).then(mensaje => {
+                alert(mensaje);
+            });
+        }
+    </script>
+
+
+
+</body>
+
+</html>
