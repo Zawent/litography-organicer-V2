@@ -52,8 +52,7 @@
     </table>
 
     <br>
-    <button onclick="seleccionarCarpeta()">Seleccionar carpeta</button>
-
+    <button id="renombrarBtn" style="display:none;">Cambiar nombres</button>
     <button onclick="abrirModalExportacion()">Exportar a Excel</button>
 
     <!-- Modal para exportación -->
@@ -504,8 +503,11 @@
         }
     </script>
 
+
     <!-- EXportar a excel -->
     <script>
+        let rutaExcel = ""; // Para almacenar la ruta del archivo Excel exportado
+
         function generarExcel() {
             const tabla = document.querySelector("#tablaExportacion table");
             const datos = [];
@@ -528,8 +530,25 @@
 
             window.pywebview.api.exportar_excel(datos).then(mensaje => {
                 alert(mensaje);
+                rutaExcel = mensaje.split("\n")[1].trim(); // Extraer la ruta del mensaje de éxito
+                document.getElementById("renombrarBtn").style.display = "inline-block"; // Mostrar botón "Cambiar nombres"
             });
         }
+
+        // Ejecutar renombrado
+        document.getElementById("renombrarBtn").addEventListener("click", function() {
+            if (!rutaExcel) {
+                alert("No se ha exportado un archivo Excel.");
+                return;
+            }
+
+            window.pywebview.api.ejecutar_renombrado(rutaExcel).then(function(response) {
+                alert(response);
+            });
+        });
+
+        // Llamada para generar el Excel
+        document.getElementById("exportarBtn").addEventListener("click", generarExcel);
     </script>
 
 
