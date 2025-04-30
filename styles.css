@@ -112,7 +112,10 @@ th:nth-child(6), td:nth-child(6) { width: 18%; } /* CÓDIGO */
     border-radius: 15px;
     border: 1px solid #ccc;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    max-height: 80vh; /* 👈 Límite de altura del modal */
+    overflow-y: auto; /* 👈 Scroll vertical si es necesario */
 }
+
 
 .close {
     color: #aaa;
