@@ -29,17 +29,17 @@ class Api:
             return f"Ocurrió un error al guardar:\n{e}"
 
     def ejecutar_renombrado(self, ruta_excel):
-        # Llamar al script de renombrado usando subprocess
         if not ruta_excel:
             return "No se ha exportado un archivo Excel aún."
 
         try:
-            # Suponiendo que el script de renombrado está en la misma carpeta que tu proyecto
-            script_path = os.path.join(os.getcwd(), "renombre_fotos_seleccionadas.py")
-            subprocess.run(["python", script_path, ruta_excel], check=True)
-            return "Renombrado completado con éxito."
-        except subprocess.CalledProcessError as e:
-            return f"Ocurrió un error al ejecutar el script:\n{e}"
+            script_exe = os.path.join(os.path.dirname(__file__), "renombre_fotos_seleccionadas.exe")
+            # Usar Popen para abrir el CMD solo cuando se ejecute el proceso
+            subprocess.Popen([script_exe, ruta_excel])
+            return "Renombrado iniciado con éxito."
+        except Exception as e:
+            return f"Error inesperado:\n{e}"
+
 
 if __name__ == '__main__':
     api = Api()

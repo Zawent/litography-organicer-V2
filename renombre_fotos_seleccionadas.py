@@ -8,6 +8,16 @@ def limpiar_nombre(nombre):
     """Eliminar caracteres no válidos para nombres de archivo."""
     return "".join(c for c in nombre if c in string.printable and c not in r'<>:"/\\|?*')
 
+def obtener_columnas_nombres_apellidos(df):
+    """Obtener las columnas que contienen 'NOMBRE' o 'APELLIDO' y 'ORDEN DE FOTO'."""
+    columnas_nombres = [col for col in df.columns if re.match(r'NOMBRE\d*', col, re.IGNORECASE)]
+    columnas_apellidos = [col for col in df.columns if re.match(r'APELLIDO\d*', col, re.IGNORECASE)]
+    
+    if "ORDEN DE FOTO" not in df.columns:
+        raise ValueError("❌ El archivo Excel debe contener la columna 'ORDEN DE FOTO'.")
+    
+    return columnas_nombres, columnas_apellidos
+
 try:
     if len(sys.argv) < 2:
         print("❌ No se proporcionó la ruta del archivo Excel.")
@@ -22,18 +32,21 @@ try:
 
     df = pd.read_excel(ruta_excel, engine="openpyxl")
 
-    if "ORDEN DE FOTO" not in df.columns or "NOMBRE" not in df.columns or "APELLIDO" not in df.columns:
-        print("❌ El archivo Excel debe contener las columnas: 'ORDEN DE FOTO', 'NOMBRE' y 'APELLIDO'.")
-        input("\nPresiona Enter para salir...")
-        sys.exit()
+    # Obtener columnas necesarias
+    columnas_nombres, columnas_apellidos = obtener_columnas_nombres_apellidos(df)
 
-    df["IMAGEN"] = ""
+    df["IMAGEN"] = ""  # Crear columna de imágenes vacía
 
+    # Combinar las columnas de nombres y apellidos
+    df["NOMBRE"] = df[columnas_nombres].apply(lambda x: ' '.join(x.dropna().astype(str)), axis=1)
+    df["APELLIDO"] = df[columnas_apellidos].apply(lambda x: ' '.join(x.dropna().astype(str)), axis=1)
+
+    # Filtrar filas válidas
     df_validos = df[pd.to_numeric(df["ORDEN DE FOTO"], errors="coerce").notna()].copy()
     df_validos["ORDEN DE FOTO"] = df_validos["ORDEN DE FOTO"].astype(int)
-
     df_validos = df_validos.sort_values(by="ORDEN DE FOTO").reset_index(drop=True)
 
+    # Crear mapa de nombres
     mapa_nombres = {
         int(row["ORDEN DE FOTO"]): f"{row['ORDEN DE FOTO']} {row['NOMBRE']} {row['APELLIDO']}"
         for _, row in df_validos.iterrows()
@@ -51,12 +64,12 @@ try:
         input("\nPresiona Enter para salir...")
         sys.exit()
 
-    # Ordenar las imágenes por el número en el nombre del archivo
+    # Asociar imágenes
     archivos_mapeados = []
     for archivo in archivos_en_carpeta:
         match = re.search(r"(\d+)", archivo)
         if match:
-            numero = int(match.group(1))  # Usamos el número extraído del nombre
+            numero = int(match.group(1))
             extension = os.path.splitext(archivo)[1].lower()
             archivos_mapeados.append((numero, archivo, extension))
 
@@ -69,10 +82,9 @@ try:
     print("\n🔄 Iniciando proceso de renombrado...")
     archivos_renombrados = []
 
-    # Aquí renombramos las imágenes según el orden de "ORDEN DE FOTO"
     for i, (num, archivo, ext) in enumerate(archivos_mapeados):
-        if i < len(mapa_nombres):  # Asegurarse de que no excedemos el número de imágenes
-            orden_foto = list(mapa_nombres.keys())[i]  # Obtenemos el siguiente valor del "ORDEN DE FOTO"
+        if i < len(mapa_nombres):
+            orden_foto = list(mapa_nombres.keys())[i]
             nombre_limpio = limpiar_nombre(mapa_nombres[orden_foto])
             nuevo_nombre = f"{nombre_limpio}{ext}"
             ruta_original = os.path.join(carpeta_actual, archivo)
@@ -87,17 +99,16 @@ try:
             try:
                 os.rename(ruta_original, ruta_nueva)
                 print(f"✅ {archivo} → {nuevo_nombre}")
-                df.loc[df["ORDEN DE FOTO"] == orden_foto, "IMAGEN"] = nuevo_nombre
+                df.loc[df["ORDEN DE FOTO"] == orden_foto, "IMAGEN"] = ruta_nueva  # ← RUTA COMPLETA
                 archivos_renombrados.append((archivo, nuevo_nombre))
             except Exception as e:
                 print(f"❌ Error al renombrar {archivo}: {e}")
 
-    # Guardar Excel actualizado
-    ruta_guardado = os.path.join(carpeta_actual, "datos_actualizados.xlsx")
-    df.to_excel(ruta_guardado, index=False, engine="openpyxl")
+    # Guardar en el MISMO archivo Excel original
+    df.to_excel(ruta_excel, index=False, engine="openpyxl")
 
     print("\n🚀 Renombrado completado con éxito.")
-    print(f"📂 Archivo actualizado guardado como: {ruta_guardado}")
+    print(f"📂 Archivo Excel original actualizado: {ruta_excel}")
 
     if archivos_renombrados:
         print("\n📄 Archivos renombrados exitosamente:")
@@ -108,4 +119,3 @@ try:
 
 except Exception as e:
     print(f"\n❌ Se ha producido un error: {e}")
-
