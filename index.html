@@ -62,27 +62,30 @@
 
             <h2>Vista previa para exportar</h2>
 
-            <div>
-                <h2>Editar NOMBRE</h2>
-                <label><input type="checkbox" id="separarNombres"> Separar nombres</label><br>
-                <label><input type="checkbox" id="nombreMayuscula" onchange="controlarFormatoNombre('mayus')"> Nombres
-                    en
-                    MAYÚSCULA</label><br>
-                <label><input type="checkbox" id="nombreOracion" onchange="controlarFormatoNombre('oracion')"> Nombres
-                    Tipo
-                    Oración</label><br>
+            <div id="cajaConfig">
+                <div>
+                    <h2>Editar NOMBRE</h2>
+                    <label><input type="checkbox" id="separarNombres"> Separar nombres</label><br>
+                    <label><input type="checkbox" id="nombreMayuscula" onchange="controlarFormatoNombre('mayus')"> Nombres
+                        en
+                        MAYÚSCULA</label><br>
+                    <label><input type="checkbox" id="nombreOracion" onchange="controlarFormatoNombre('oracion')"> Nombres
+                        Tipo
+                        Oración</label><br>
+                </div>
+    
+                <div>
+                    <h2>Editar APELLIDO</h2>
+                    <label><input type="checkbox" id="separarApellidos"> Separar apellidos</label><br>
+                    <label><input type="checkbox" id="apellidoMayuscula" onchange="controlarFormatoApellido('mayus')">
+                        Apellidos en
+                        MAYÚSCULA</label><br>
+                    <label><input type="checkbox" id="apellidoOracion" onchange="controlarFormatoApellido('oracion')">
+                        Apellidos Tipo
+                        Oración</label><br>
+                </div>
             </div>
-
-            <div>
-                <h2>Editar APELLIDO</h2>
-                <label><input type="checkbox" id="separarApellidos"> Separar apellidos</label><br>
-                <label><input type="checkbox" id="apellidoMayuscula" onchange="controlarFormatoApellido('mayus')">
-                    Apellidos en
-                    MAYÚSCULA</label><br>
-                <label><input type="checkbox" id="apellidoOracion" onchange="controlarFormatoApellido('oracion')">
-                    Apellidos Tipo
-                    Oración</label><br>
-            </div>
+            
 
 
 
